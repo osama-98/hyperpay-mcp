@@ -11,11 +11,18 @@ env.cacheDir = fileURLToPath(new URL("../models/", import.meta.url));
 
 // bge models are trained with this prefix on questions (not on documents).
 const QUERY_PREFIX = "Represent this sentence for searching relevant passages: ";
-const BATCH_SIZE = 32;
+// One text at a time: batching pads every text to the longest one in the batch,
+// which cost ~2 GB of memory at batch 32 and was slower (measured: 98 vs 61 ms/section).
+const BATCH_SIZE = 1;
 
 // Load once, reuse: loading takes seconds, embedding takes milliseconds.
+// enableCpuMemArena: false = give memory back after each run instead of keeping it reserved.
 let model: Promise<FeatureExtractionPipeline> | null = null;
-const getModel = () => (model ??= pipeline("feature-extraction", MODEL, { dtype: "q8" }));
+const getModel = () =>
+  (model ??= pipeline("feature-extraction", MODEL, {
+    dtype: "q8",
+    session_options: { enableCpuMemArena: false },
+  }));
 
 /** Embed texts in batches. Vectors are normalized (length 1), so cosine similarity = dot product. */
 async function embed(texts: string[]): Promise<Float32Array[]> {
@@ -33,8 +40,22 @@ async function embed(texts: string[]): Promise<Float32Array[]> {
 
 export const embedDocuments = (texts: string[]) => embed(texts);
 
+// Recently asked questions -> vectors, so a repeated question skips the model.
+// A Map keeps insertion order: the first key is the least recently used one.
+const QUERY_CACHE_SIZE = 500;
+const queryCache = new Map<string, Float32Array>();
+
 export async function embedQuery(query: string): Promise<Float32Array> {
-  const [vector] = await embed([QUERY_PREFIX + query]);
+  const key = query.trim();
+  const cached = queryCache.get(key);
+  if (cached) {
+    queryCache.delete(key); // move to the end = most recently used
+    queryCache.set(key, cached);
+    return cached;
+  }
+  const [vector] = await embed([QUERY_PREFIX + key]);
+  queryCache.set(key, vector!);
+  if (queryCache.size > QUERY_CACHE_SIZE) queryCache.delete(queryCache.keys().next().value!);
   return vector!;
 }
 
