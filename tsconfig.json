@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    // Match how modern Node loads ES modules ("type": "module" in package.json).
+    "module": "nodenext",
+    "target": "es2024",
+    // Turn on every type check.
+    "strict": true,
+    // A build with type errors writes nothing to dist/, so broken code can't ship.
+    "noEmitOnError": true,
+    // Array/object index access may be undefined (e.g. rows[0]) — forces a check.
+    "noUncheckedIndexedAccess": true,
+    "rootDir": "src",
+    "outDir": "dist",
+    "types": ["node"],
+    "skipLibCheck": true
+  },
+  "include": ["src"]
+}

@@ -1,0 +1,21 @@
+# Installed packages: npm ci recreates them from package-lock.json
+node_modules/
+
+# Compiled output: npm run build recreates it from src/
+dist/
+
+# Search index (SQLite + WAL files): the indexer rebuilds it from the docs
+data/
+
+# Embedding model cache (~34 MB): downloaded on first use / Docker build
+models/
+
+# Secrets, if you ever add any (e.g. an API key)
+.env
+.env.*
+
+# Logs and editor/OS clutter
+*.log
+.DS_Store
+.idea/
+.vscode/

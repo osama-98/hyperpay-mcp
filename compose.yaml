@@ -1,0 +1,10 @@
+services:
+  mcp:
+    build: .
+    ports:
+      # 127.0.0.1 = only this machine can connect. Read-only docs, no credentials.
+      - "127.0.0.1:8081:8081"
+    volumes:
+      # The search index lives in ./data, so it survives rebuilds.
+      - ./data:/app/data
+    restart: unless-stopped

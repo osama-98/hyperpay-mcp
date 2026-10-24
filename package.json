@@ -1,0 +1,27 @@
+{
+  "name": "hyperpay-mcp",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "dev": "tsx src/mcp.ts",
+    "build": "tsc",
+    "start": "node dist/mcp.js",
+    "index": "tsx src/indexer.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "@huggingface/transformers": "^4.3.1",
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "cheerio": "^1.2.0",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.6.5",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
+  }
+}
