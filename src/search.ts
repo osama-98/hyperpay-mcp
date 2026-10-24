@@ -9,16 +9,23 @@ const CANDIDATES = 30; // how many results each method contributes before mergin
 const RRF_K = 60; // standard RRF constant: damps the gap between rank 1 and rank 2
 
 export async function hybridSearch(query: string, source: Source | null, limit: number): Promise<SearchHit[]> {
-  const keywordIds = searchSections(query, source, CANDIDATES).map((hit) => hit.id);
+  const keywordHits = searchSections(query, source, CANDIDATES);
+  const keywordIds = keywordHits.map((hit) => hit.id);
+  // Exact-match signal: sections containing the whole query verbatim. Embeddings don't
+  // understand identifiers (000.200.100 "looks like" 000.100.220), so exact text must count.
+  const needle = query.trim().toLowerCase();
+  const exactIds = keywordHits
+    .filter((hit) => `${hit.heading}\n${hit.body}`.toLowerCase().includes(needle))
+    .map((hit) => hit.id);
   // If the model fails, fall back to keyword-only instead of failing the search.
   const semanticIds = await semanticSearch(query, source).catch((err: unknown) => {
     console.error(`semantic search failed, using keyword only: ${(err as Error).message}`);
     return [];
   });
 
-  // RRF: each list gives a section 1/(60 + rank). Sections ranked high in both lists win.
+  // RRF: each list gives a section 1/(60 + rank). Sections ranked high in several lists win.
   const scores = new Map<number, number>();
-  for (const ids of [keywordIds, semanticIds]) {
+  for (const ids of [keywordIds, semanticIds, exactIds]) {
     ids.forEach((id, rank) => scores.set(id, (scores.get(id) ?? 0) + 1 / (RRF_K + rank + 1)));
   }
   const ranked = [...scores.entries()].sort((a, b) => b[1] - a[1]).map(([id]) => id);
